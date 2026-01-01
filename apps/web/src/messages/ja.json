@@ -1,0 +1,85 @@
+{
+  "common": {
+    "appName": "Glint",
+    "loading": "読み込み中...",
+    "error": "エラーが発生しました",
+    "retry": "再試行",
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "close": "閉じる",
+    "back": "戻る",
+    "next": "次へ",
+    "submit": "送信"
+  },
+  "auth": {
+    "login": "ログイン",
+    "logout": "ログアウト",
+    "register": "会員登録",
+    "email": "メール",
+    "password": "パスワード",
+    "name": "名前",
+    "forgotPassword": "パスワードを忘れた",
+    "noAccount": "アカウントをお持ちでないですか？",
+    "haveAccount": "すでにアカウントをお持ちですか？",
+    "loginSuccess": "ログインしました",
+    "logoutSuccess": "ログアウトしました",
+    "registerSuccess": "登録が完了しました"
+  },
+  "chat": {
+    "newChat": "新しいチャット",
+    "placeholder": "YouTube URLまたはメッセージを入力...",
+    "send": "送信",
+    "analyzing": "分析中...",
+    "sessions": "会話一覧",
+    "today": "今日",
+    "yesterday": "昨日",
+    "lastWeek": "過去7日間",
+    "older": "それ以前",
+    "noSessions": "会話がありません",
+    "deleteSession": "会話を削除",
+    "deleteConfirm": "この会話を削除しますか？"
+  },
+  "analysis": {
+    "standard": "スタンダードモード",
+    "deep": "ディープモード",
+    "summary": "要約",
+    "keyTakeaways": "重要ポイント",
+    "timeline": "タイムライン",
+    "keywords": "キーワード",
+    "visualAudit": "視覚情報",
+    "transcript": "文字起こし",
+    "exportNotion": "Notionにエクスポート",
+    "copyLink": "リンクをコピー"
+  },
+  "credits": {
+    "credits": "クレジット",
+    "remaining": "残りクレジット",
+    "insufficient": "クレジットが不足しています",
+    "history": "利用履歴"
+  },
+  "settings": {
+    "settings": "設定",
+    "profile": "プロフィール",
+    "subscription": "サブスクリプション",
+    "integrations": "連携",
+    "notifications": "通知",
+    "language": "言語"
+  },
+  "landing": {
+    "hero": {
+      "title": "動画の核心を一目で",
+      "subtitle": "Gemini 3.0 Pro搭載の超精密動画分析",
+      "cta": "無料で始める"
+    }
+  },
+  "errors": {
+    "unknown": "不明なエラーが発生しました",
+    "network": "ネットワークエラーが発生しました",
+    "unauthorized": "ログインが必要です",
+    "forbidden": "アクセス権限がありません",
+    "notFound": "見つかりません"
+  }
+}

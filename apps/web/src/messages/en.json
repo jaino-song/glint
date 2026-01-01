@@ -1,0 +1,85 @@
+{
+  "common": {
+    "appName": "Glint",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "forgotPassword": "Forgot Password",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "loginSuccess": "Logged in successfully",
+    "logoutSuccess": "Logged out successfully",
+    "registerSuccess": "Registration complete"
+  },
+  "chat": {
+    "newChat": "New Chat",
+    "placeholder": "Enter a YouTube URL or message...",
+    "send": "Send",
+    "analyzing": "Analyzing...",
+    "sessions": "Conversations",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "lastWeek": "Last 7 days",
+    "older": "Older",
+    "noSessions": "No conversations",
+    "deleteSession": "Delete Conversation",
+    "deleteConfirm": "Delete this conversation?"
+  },
+  "analysis": {
+    "standard": "Standard Mode",
+    "deep": "Deep Mode",
+    "summary": "Summary",
+    "keyTakeaways": "Key Takeaways",
+    "timeline": "Timeline",
+    "keywords": "Keywords",
+    "visualAudit": "Visual Audit",
+    "transcript": "Transcript",
+    "exportNotion": "Export to Notion",
+    "copyLink": "Copy Link"
+  },
+  "credits": {
+    "credits": "Credits",
+    "remaining": "Remaining Credits",
+    "insufficient": "Insufficient credits",
+    "history": "History"
+  },
+  "settings": {
+    "settings": "Settings",
+    "profile": "Profile",
+    "subscription": "Subscription",
+    "integrations": "Integrations",
+    "notifications": "Notifications",
+    "language": "Language"
+  },
+  "landing": {
+    "hero": {
+      "title": "Video insights at a glance",
+      "subtitle": "Ultra-precise video analysis powered by Gemini 3.0 Pro",
+      "cta": "Get Started Free"
+    }
+  },
+  "errors": {
+    "unknown": "An unknown error occurred",
+    "network": "Network error occurred",
+    "unauthorized": "Login required",
+    "forbidden": "Access denied",
+    "notFound": "Not found"
+  }
+}
