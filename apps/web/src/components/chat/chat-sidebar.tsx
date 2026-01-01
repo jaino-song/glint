@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   MessageSquarePlus,
   MessageSquare,
@@ -20,7 +20,8 @@ import { groupByDate } from '@/lib/utils';
 
 export function ChatSidebar() {
   const pathname = usePathname();
-  const { sidebarOpen, toggleSidebar } = useUIStore();
+  const router = useRouter();
+  const { setSidebarOpen } = useUIStore();
   const { user } = useAuthStore();
   const { data: sessions, isLoading } = useChatSessions();
   const createSession = useCreateSession();
@@ -28,12 +29,17 @@ export function ChatSidebar() {
 
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
+  // Check if we're on the new chat page (exactly /chat, not /chat/[id])
+  const isNewChatPage = pathname === '/chat';
+
   const groupedSessions = sessions ? groupByDate(
     sessions.map(s => ({ ...s, createdAt: s.createdAt }))
   ) : [];
 
   const handleNewChat = () => {
-    createSession.mutate(undefined);
+    // Navigate to /chat and close sidebar
+    router.push('/chat');
+    setSidebarOpen(false);
   };
 
   const handleDeleteSession = (id: string) => {
@@ -43,20 +49,20 @@ export function ChatSidebar() {
     setMenuOpenId(null);
   };
 
+  const handleSessionClick = () => {
+    // Close sidebar when navigating to a session
+    setSidebarOpen(false);
+  };
+
   return (
-    <aside
-      className={cn(
-        'flex h-full flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300',
-        sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'
-      )}
-    >
+    <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
         <h1 className="text-lg font-bold text-sidebar-foreground">Glint</h1>
         <Button
           variant="ghost"
           size="icon-sm"
-          onClick={toggleSidebar}
+          onClick={() => setSidebarOpen(false)}
           className="text-muted-foreground hover:text-sidebar-foreground"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -67,8 +73,13 @@ export function ChatSidebar() {
       <div className="p-3">
         <Button
           onClick={handleNewChat}
-          isLoading={createSession.isPending}
-          className="w-full justify-start bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/90"
+          variant={isNewChatPage ? 'primary' : 'ghost'}
+          className={cn(
+            'w-full justify-start',
+            isNewChatPage
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+              : 'text-sidebar-foreground hover:bg-sidebar-accent/20'
+          )}
           leftIcon={<MessageSquarePlus className="h-4 w-4" />}
         >
           New Chat
@@ -93,11 +104,13 @@ export function ChatSidebar() {
               </h3>
               <ul className="space-y-1">
                 {group.items.map((session) => {
-                  const isActive = pathname === `/chat/${session.id}`;
+                  // Only show active if we're on this specific session (not on /chat new page)
+                  const isActive = !isNewChatPage && pathname === `/chat/${session.id}`;
                   return (
                     <li key={session.id} className="relative">
                       <Link
                         href={`/chat/${session.id}`}
+                        onClick={handleSessionClick}
                         className={cn(
                           'group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors',
                           isActive
@@ -146,6 +159,7 @@ export function ChatSidebar() {
           <li>
             <Link
               href="/library"
+              onClick={() => setSidebarOpen(false)}
               className={cn(
                 'flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors',
                 pathname === '/library'
@@ -160,6 +174,7 @@ export function ChatSidebar() {
           <li>
             <Link
               href="/settings"
+              onClick={() => setSidebarOpen(false)}
               className={cn(
                 'flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors',
                 pathname === '/settings'

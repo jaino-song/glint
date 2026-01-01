@@ -2,8 +2,16 @@ import { z } from 'zod';
 
 /**
  * YouTube URL 패턴
+ * 지원 형식:
+ * - youtube.com/watch?v=VIDEO_ID
+ * - youtu.be/VIDEO_ID
+ * - youtube.com/embed/VIDEO_ID
+ * - youtube.com/shorts/VIDEO_ID
+ * - youtube.com/live/VIDEO_ID
+ * - m.youtube.com/watch?v=VIDEO_ID (모바일)
+ * - music.youtube.com/watch?v=VIDEO_ID (YouTube Music)
  */
-const youtubeUrlPattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)[\w-]{11}(&.*)?$/;
+const youtubeUrlPattern = /^(https?:\/\/)?(www\.|m\.|music\.)?(youtube\.com\/(watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)[\w-]{11}([?&].*)?$/;
 
 /**
  * YouTube URL 스키마
@@ -42,6 +50,8 @@ export function extractVideoId(url: string): string | null {
     /(?:youtube\.com\/watch\?v=)([\w-]{11})/,
     /(?:youtu\.be\/)([\w-]{11})/,
     /(?:youtube\.com\/embed\/)([\w-]{11})/,
+    /(?:youtube\.com\/shorts\/)([\w-]{11})/,
+    /(?:youtube\.com\/live\/)([\w-]{11})/,
   ];
 
   for (const pattern of patterns) {

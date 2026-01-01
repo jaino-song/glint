@@ -1,10 +1,11 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Avatar } from '@/components/ui';
+import { Avatar, Markdown } from '@/components/ui';
 import { AnalysisCard } from './analysis-card';
 import type { ChatMessage as ChatMessageType } from '@glint/types';
 import { Bot } from 'lucide-react';
+import { useMemo } from 'react';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -16,6 +17,19 @@ export function ChatMessage({ message, userName, userAvatar }: ChatMessageProps)
   const isUser = message.role === 'user';
   const isAnalysisCard = message.type === 'analysis_card';
   const isError = message.type === 'error';
+
+  // For analysis_card messages, get the ID from analysisRefId or parse from content JSON
+  const analysisId = useMemo(() => {
+    if (!isAnalysisCard) return null;
+    if (message.analysisRefId) return message.analysisRefId;
+    // Parse jobId from content JSON for pending jobs
+    try {
+      const content = JSON.parse(message.content || '{}');
+      return content.jobId || null;
+    } catch {
+      return null;
+    }
+  }, [isAnalysisCard, message.analysisRefId, message.content]);
 
   return (
     <div
@@ -38,16 +52,16 @@ export function ChatMessage({ message, userName, userAvatar }: ChatMessageProps)
       {/* Content */}
       <div
         className={cn(
-          'max-w-[80%] flex-1',
+          'max-w-[70%]',
           isUser ? 'flex justify-end' : ''
         )}
       >
-        {isAnalysisCard && message.analysisRefId ? (
-          <AnalysisCard analysisId={message.analysisRefId} />
+        {isAnalysisCard && analysisId ? (
+          <AnalysisCard analysisId={analysisId} />
         ) : (
           <div
             className={cn(
-              'inline-block rounded-2xl px-4 py-2.5',
+              'rounded-2xl px-4 py-2.5',
               isUser
                 ? 'bg-primary text-primary-foreground'
                 : isError
@@ -55,9 +69,16 @@ export function ChatMessage({ message, userName, userAvatar }: ChatMessageProps)
                 : 'bg-muted text-foreground'
             )}
           >
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">
-              {message.content}
-            </p>
+            {isUser ? (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                {message.content}
+              </p>
+            ) : (
+              <Markdown
+                content={message.content || ''}
+                className="text-sm [&_p]:text-foreground [&_li]:text-foreground [&_code]:bg-background/50"
+              />
+            )}
           </div>
         )}
         <p

@@ -100,7 +100,7 @@ export function useDeleteSession() {
 
 export function useSendMessage() {
   const queryClient = useQueryClient();
-  const { addPendingMessage } = useChatStore();
+  const { addPendingMessage, clearPendingMessages } = useChatStore();
 
   return useMutation({
     mutationFn: async ({
@@ -129,7 +129,9 @@ export function useSendMessage() {
       };
       addPendingMessage(optimisticMessage);
     },
-    onSuccess: (_, variables) => {
+    onSettled: (_, __, variables) => {
+      // Clear pending messages and refetch session data
+      clearPendingMessages();
       queryClient.invalidateQueries({ queryKey: chatKeys.session(variables.sessionId) });
       queryClient.invalidateQueries({ queryKey: chatKeys.sessions() });
     },

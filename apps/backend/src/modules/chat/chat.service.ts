@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChatSession, ChatMessage, ErrorCode, ErrorMessages } from '@glint/types';
+import { GeminiChatService } from './gemini-chat.service';
 
 export interface CreateSessionDto {
   title?: string;
@@ -30,7 +31,12 @@ export interface PaginatedSessions {
 
 @Injectable()
 export class ChatService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(ChatService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private geminiChatService: GeminiChatService,
+  ) {}
 
   async listSessions(
     userId: string,
@@ -160,7 +166,7 @@ export class ChatService {
     userId: string,
     sessionId: string,
     data: SendMessageDto,
-  ): Promise<ChatMessage> {
+  ): Promise<{ userMessage: ChatMessage; assistantMessage: ChatMessage }> {
     const session = await this.prisma.chatSession.findUnique({
       where: { id: sessionId },
     });
@@ -180,7 +186,7 @@ export class ChatService {
     }
 
     // Create user message
-    const message = await this.prisma.chatMessage.create({
+    const userMessage = await this.prisma.chatMessage.create({
       data: {
         sessionId,
         role: 'user',
@@ -202,7 +208,29 @@ export class ChatService {
       });
     }
 
-    return this.mapToMessage(message);
+    // Generate AI response
+    let assistantContent: string;
+    try {
+      assistantContent = await this.geminiChatService.generateResponse(
+        sessionId,
+        data.content,
+      );
+    } catch (error) {
+      this.logger.error(`Failed to generate AI response: ${error}`);
+      assistantContent = '죄송합니다. 응답을 생성하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    }
+
+    // Save assistant message
+    const assistantMessage = await this.addAssistantMessage(
+      sessionId,
+      assistantContent,
+      'text',
+    );
+
+    return {
+      userMessage: this.mapToMessage(userMessage),
+      assistantMessage,
+    };
   }
 
   async addAssistantMessage(

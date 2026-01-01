@@ -90,7 +90,7 @@ export const api = {
       return apiClient.get<import('@glint/types').ChatSession[]>(`/chat/sessions${query}`);
     },
     createSession: (data?: { title?: string }) =>
-      apiClient.post<import('@glint/types').ChatSession>('/chat/sessions', data),
+      apiClient.post<import('@glint/types').ChatSession>('/chat/sessions', data ?? {}),
     getSession: (id: string) =>
       apiClient.get<import('@glint/types').ChatSession & { messages: import('@glint/types').ChatMessage[] }>(
         `/chat/sessions/${id}`
@@ -99,7 +99,7 @@ export const api = {
       apiClient.patch<import('@glint/types').ChatSession>(`/chat/sessions/${id}`, data),
     deleteSession: (id: string) => apiClient.delete(`/chat/sessions/${id}`),
     sendMessage: (sessionId: string, data: { content: string }) =>
-      apiClient.post<import('@glint/types').ChatMessage>(`/chat/sessions/${sessionId}/messages`, data),
+      apiClient.post<{ userMessage: import('@glint/types').ChatMessage; assistantMessage: import('@glint/types').ChatMessage }>(`/chat/sessions/${sessionId}/messages`, data),
   },
 
   // Analysis
@@ -108,6 +108,8 @@ export const api = {
       apiClient.post<import('@glint/types').AnalysisJob>('/analysis/standard', data),
     getResult: (id: string) =>
       apiClient.get<import('@glint/types').AnalysisResult>(`/analysis/${id}`),
+    getJob: (jobId: string) =>
+      apiClient.get<import('@glint/types').AnalysisJob>(`/analysis/jobs/${jobId}`),
   },
 
   // Credits

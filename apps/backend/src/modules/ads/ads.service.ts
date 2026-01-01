@@ -118,14 +118,14 @@ export class AdsService {
           created_at
         ) VALUES (
           ${userId ? userId : null}::uuid,
-          ${sessionId || null},
-          ${event.platform},
-          ${event.type},
-          ${event.placementId},
-          ${event.unitId || null},
-          ${event.errorMessage || null},
-          ${event.reward?.type || null},
-          ${event.reward?.amount || null},
+          ${sessionId || null}::text,
+          ${event.platform}::text,
+          ${event.type}::text,
+          ${event.placementId}::text,
+          ${event.unitId || null}::text,
+          ${event.errorMessage || null}::text,
+          ${event.reward?.type || null}::text,
+          ${event.reward?.amount || null}::int,
           NOW()
         )
       `;
@@ -144,8 +144,8 @@ export class AdsService {
     const result = await this.prisma.$queryRaw<Array<{ grant_ad_reward: string }>>`
       SELECT grant_ad_reward(
         ${userId}::uuid,
-        ${rewardType},
-        24
+        ${rewardType}::text,
+        24::int
       )
     `;
 

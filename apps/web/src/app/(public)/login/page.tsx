@@ -1,17 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginInput } from '@glint/validators';
 import { Button, Input, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { OAuthButtons } from '@/components/auth';
 import { useLogin } from '@/hooks';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 
-export default function LoginPage() {
+// useSearchParams를 사용하는 컴포넌트는 Suspense로 감싸야 함
+function LoginForm() {
   const login = useLogin();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+
+  // OAuth 에러 처리 (callback에서 전달된 에러)
+  useEffect(() => {
+    const oauthError = searchParams.get('error');
+    if (oauthError) {
+      setError(decodeURIComponent(oauthError));
+    }
+  }, [searchParams]);
 
   const {
     register,
@@ -83,6 +95,19 @@ export default function LoginPage() {
             </Button>
           </form>
 
+          {/* OAuth Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white px-4 text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          {/* OAuth Buttons */}
+          <OAuthButtons mode="login" />
+
           <div className="mt-6 text-center text-sm text-gray-500">
             Don't have an account?{' '}
             <Link href="/register" className="text-primary-600 hover:underline">
@@ -92,5 +117,17 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

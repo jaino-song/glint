@@ -25,6 +25,28 @@ export function useAnalysisResult(id: string) {
   });
 }
 
+export function useAnalysisJob(jobId: string) {
+  return useQuery({
+    queryKey: analysisKeys.job(jobId),
+    queryFn: async () => {
+      const response = await api.analysis.getJob(jobId);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error('Job not found');
+    },
+    enabled: !!jobId,
+    // Poll every 2 seconds if job is pending/processing
+    refetchInterval: (query) => {
+      const job = query.state.data;
+      if (job && (job.status === 'PENDING' || job.status === 'PROCESSING')) {
+        return 2000;
+      }
+      return false;
+    },
+  });
+}
+
 export function useStandardAnalysis() {
   const queryClient = useQueryClient();
 

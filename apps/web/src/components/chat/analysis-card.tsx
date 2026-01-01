@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useAnalysisResult } from '@/hooks';
+import { useAnalysisResult, useAnalysisJob } from '@/hooks';
 import {
   Card,
   CardContent,
@@ -12,16 +12,13 @@ import {
 } from '@/components/ui';
 import { formatDuration } from '@/lib/utils';
 import {
-  Clock,
   Tag,
-  List,
-  ChevronDown,
-  ChevronUp,
   ExternalLink,
   Copy,
   FileText,
+  Loader2,
+  BookOpen,
 } from 'lucide-react';
-import { useState } from 'react';
 import type { AnalysisResultJson } from '@glint/types';
 
 interface AnalysisCardProps {
@@ -29,10 +26,56 @@ interface AnalysisCardProps {
 }
 
 export function AnalysisCard({ analysisId }: AnalysisCardProps) {
-  const { data: analysis, isLoading, error } = useAnalysisResult(analysisId);
-  const [expanded, setExpanded] = useState(false);
+  // analysisId could be a job ID or a result ID
+  // First try to fetch as a job to check status
+  const { data: job, isLoading: jobLoading, error: jobError } = useAnalysisJob(analysisId);
 
-  if (isLoading) {
+  // Determine if we should fetch the result:
+  // - If job exists and has resultId, use that
+  // - If job doesn't exist (404 = not a job ID), try analysisId as a result ID
+  // - If job is pending/processing, don't fetch result yet
+  const shouldFetchResult = job?.resultId || (!job && !jobLoading && jobError);
+  const resultId = job?.resultId || (shouldFetchResult ? analysisId : '');
+  const { data: analysis, isLoading: resultLoading, error } = useAnalysisResult(resultId);
+
+  // Job is pending or processing
+  if (job && (job.status === 'PENDING' || job.status === 'PROCESSING')) {
+    return (
+      <Card className="w-full max-w-lg">
+        <CardContent className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="mt-3 text-sm font-medium text-foreground">
+            {job.status === 'PENDING' ? 'Waiting to start...' : 'Analyzing video...'}
+          </span>
+          {job.progress > 0 && (
+            <div className="mt-2 w-full max-w-xs">
+              <div className="h-2 rounded-full bg-muted">
+                <div
+                  className="h-2 rounded-full bg-primary transition-all"
+                  style={{ width: `${job.progress}%` }}
+                />
+              </div>
+              <span className="mt-1 text-xs text-muted-foreground">{job.progress}%</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Job failed
+  if (job?.status === 'FAILED') {
+    return (
+      <Card className="w-full max-w-lg border-destructive/50 bg-destructive/5">
+        <CardContent className="py-4 text-center text-sm text-destructive">
+          Analysis failed: {job.errorMessage || 'Unknown error'}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Loading states
+  if (jobLoading || resultLoading) {
     return (
       <Card className="w-full max-w-lg animate-pulse">
         <CardContent className="flex items-center justify-center py-8">
@@ -100,42 +143,58 @@ export function AnalysisCard({ analysisId }: AnalysisCardProps) {
           </div>
         )}
 
-        {/* Key Takeaways */}
-        {result?.keyTakeaways && result.keyTakeaways.length > 0 && (
+        {/* Chapters */}
+        {result?.timeline && result.timeline.length > 0 && (
           <div>
-            <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <List className="h-3.5 w-3.5" />
-              Key Takeaways
+            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <BookOpen className="h-3.5 w-3.5" />
+              Chapters
             </h4>
-            <ul className="space-y-1">
-              {result.keyTakeaways.slice(0, expanded ? undefined : 3).map((item, i) => (
-                <li
-                  key={i}
-                  className="flex items-start gap-2 text-sm text-foreground"
-                >
-                  <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            {result.keyTakeaways.length > 3 && (
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline"
-              >
-                {expanded ? (
-                  <>
-                    <ChevronUp className="h-3 w-3" />
-                    Show less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-3 w-3" />
-                    Show {result.keyTakeaways.length - 3} more
-                  </>
-                )}
-              </button>
-            )}
+            <div className="space-y-4">
+              {result.timeline.map((chapter, i) => {
+                const nextChapter = result.timeline[i + 1];
+                const timeRange = nextChapter
+                  ? `${chapter.timestamp} – ${nextChapter.timestamp}`
+                  : chapter.timestamp;
+                const chapterTitle = chapter.title || chapter.description || 'Section';
+
+                return (
+                  <div key={i} className="space-y-2">
+                    {/* Chapter header */}
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-primary">{timeRange}</span>
+                      <span className="text-sm font-medium text-foreground">{chapterTitle}</span>
+                    </div>
+                    {/* Chapter points */}
+                    {chapter.points && chapter.points.length > 0 && (
+                      <ul className="ml-4 space-y-1.5">
+                        {chapter.points.map((point, j) => (
+                          <li key={j} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <span className="flex-shrink-0 font-mono text-primary">[{point.timestamp}]</span>
+                            <span>{point.content}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {/* Fallback to summary if no points */}
+                    {!chapter.points && chapter.summary && (
+                      <p className="ml-4 text-xs text-muted-foreground">{chapter.summary}</p>
+                    )}
+                    {/* Legacy details format */}
+                    {chapter.details && chapter.details.length > 0 && (
+                      <ul className="ml-4 space-y-1">
+                        {chapter.details.map((detail, j) => (
+                          <li key={j} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-muted-foreground" />
+                            <span>{detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -151,29 +210,6 @@ export function AnalysisCard({ analysisId }: AnalysisCardProps) {
                 <Badge key={i} variant="secondary" className="text-xs">
                   {keyword}
                 </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Timeline Preview */}
-        {result?.timeline && result.timeline.length > 0 && expanded && (
-          <div>
-            <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Clock className="h-3.5 w-3.5" />
-              Timeline
-            </h4>
-            <div className="space-y-2">
-              {result.timeline.slice(0, 5).map((item, i) => (
-                <div
-                  key={i}
-                  className="flex gap-2 text-sm"
-                >
-                  <span className="flex-shrink-0 font-mono text-xs text-primary">
-                    {item.timestamp}
-                  </span>
-                  <span className="text-foreground">{item.description}</span>
-                </div>
               ))}
             </div>
           </div>

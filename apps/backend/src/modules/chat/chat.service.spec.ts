@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatService } from './chat.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { GeminiChatService } from './gemini-chat.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 describe('ChatService', () => {
@@ -42,6 +43,10 @@ describe('ChatService', () => {
     },
   };
 
+  const mockGeminiChatService = {
+    generateResponse: jest.fn().mockResolvedValue('AI response'),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -49,6 +54,10 @@ describe('ChatService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: GeminiChatService,
+          useValue: mockGeminiChatService,
         },
       ],
     }).compile();
@@ -120,17 +129,32 @@ describe('ChatService', () => {
   });
 
   describe('sendMessage', () => {
-    it('should create a user message', async () => {
+    const mockAssistantMessage = {
+      id: '423e4567-e89b-12d3-a456-426614174003',
+      sessionId: mockSessionId,
+      role: 'assistant',
+      type: 'text',
+      content: 'AI response',
+      analysisRefId: null,
+      createdAt: new Date(),
+    };
+
+    it('should create user and assistant messages', async () => {
       mockPrismaService.chatSession.findUnique.mockResolvedValue(mockSession);
-      mockPrismaService.chatMessage.create.mockResolvedValue(mockMessage);
+      mockPrismaService.chatMessage.create
+        .mockResolvedValueOnce(mockMessage) // user message
+        .mockResolvedValueOnce(mockAssistantMessage); // assistant message
       mockPrismaService.chatMessage.count.mockResolvedValue(2);
+      mockGeminiChatService.generateResponse.mockResolvedValue('AI response');
 
       const result = await service.sendMessage(mockUserId, mockSessionId, {
         content: 'Hello',
       });
 
-      expect(result.content).toBe('Hello');
-      expect(result.role).toBe('user');
+      expect(result.userMessage.content).toBe('Hello');
+      expect(result.userMessage.role).toBe('user');
+      expect(result.assistantMessage.content).toBe('AI response');
+      expect(result.assistantMessage.role).toBe('assistant');
     });
   });
 });

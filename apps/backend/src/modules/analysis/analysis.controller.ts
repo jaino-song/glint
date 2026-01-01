@@ -6,7 +6,6 @@ import {
   Param,
   Query,
   UseGuards,
-  UsePipes,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import {
@@ -29,23 +28,14 @@ export class AnalysisController {
 
   @Post('standard')
   @ApiOperation({ summary: 'Start standard analysis' })
-  @UsePipes(new ZodValidationPipe(standardAnalysisSchema))
   async startStandardAnalysis(
     @CurrentUserId() userId: string,
-    @Body() data: StartAnalysisDto,
+    @Body(new ZodValidationPipe(standardAnalysisSchema)) data: StartAnalysisDto,
   ): Promise<AnalysisJob> {
     return this.analysisService.startStandardAnalysis(userId, data);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get analysis result' })
-  async getAnalysisResult(
-    @CurrentUserId() userId: string,
-    @Param('id') resultId: string,
-  ): Promise<AnalysisResult> {
-    return this.analysisService.getAnalysisResult(userId, resultId);
-  }
-
+  // Specific routes MUST come before wildcard :id route
   @Get('jobs/:id')
   @ApiOperation({ summary: 'Get analysis job status' })
   async getAnalysisJob(
@@ -79,5 +69,15 @@ export class AnalysisController {
     @Query('mode') mode?: 'STANDARD' | 'DEEP',
   ): Promise<AnalysisResult | null> {
     return this.analysisService.getAnalysisByVideoId(videoId, mode || 'STANDARD');
+  }
+
+  // Wildcard route MUST be last
+  @Get(':id')
+  @ApiOperation({ summary: 'Get analysis result' })
+  async getAnalysisResult(
+    @CurrentUserId() userId: string,
+    @Param('id') resultId: string,
+  ): Promise<AnalysisResult> {
+    return this.analysisService.getAnalysisResult(userId, resultId);
   }
 }

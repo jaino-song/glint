@@ -17,6 +17,7 @@ import {
   Plan,
 } from '@glint/types';
 import { extractVideoId, isValidYoutubeUrl } from '@glint/validators';
+import { ChatService } from '../chat/chat.service';
 
 export interface StartAnalysisDto {
   url: string;
@@ -35,7 +36,10 @@ export interface PaginatedJobs {
 
 @Injectable()
 export class AnalysisService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private chatService: ChatService,
+  ) {}
 
   async startStandardAnalysis(
     userId: string,
@@ -107,6 +111,21 @@ export class AnalysisService {
         },
       });
 
+      // Add chat message for cached result
+      if (data.sessionId) {
+        await this.chatService.addAssistantMessage(
+          data.sessionId,
+          JSON.stringify({
+            jobId: job.id,
+            videoId,
+            status: 'COMPLETED',
+            resultId: existingResult.id,
+          }),
+          'analysis_card',
+          existingResult.id,
+        );
+      }
+
       return this.mapToJob(job);
     }
 
@@ -114,10 +133,10 @@ export class AnalysisService {
     await this.prisma.$executeRaw`
       SELECT * FROM deduct_credits(
         ${userId}::uuid,
-        ${creditCost},
-        ${'Standard analysis for ' + videoId},
-        NULL,
-        ${'analysis_job'}
+        ${creditCost}::int,
+        ${'Standard analysis for ' + videoId}::text,
+        NULL::uuid,
+        ${'analysis_job'}::text
       )
     `;
 
@@ -136,8 +155,20 @@ export class AnalysisService {
 
     // Increment daily usage
     await this.prisma.$executeRaw`
-      SELECT increment_daily_usage(${userId}::uuid, 'standard', 0)
+      SELECT increment_daily_usage(${userId}::uuid, 'standard'::text, 0::int)
     `;
+
+    // Add chat message if sessionId provided
+    // Note: analysisRefId is undefined for PENDING jobs (no result yet)
+    // The content JSON contains the jobId which the frontend uses for polling
+    if (data.sessionId) {
+      await this.chatService.addAssistantMessage(
+        data.sessionId,
+        JSON.stringify({ jobId: job.id, videoId, status: 'PENDING' }),
+        'analysis_card',
+        undefined,
+      );
+    }
 
     return this.mapToJob(job);
   }
@@ -268,8 +299,8 @@ export class AnalysisService {
       await this.prisma.$executeRaw`
         SELECT refund_credits(
           ${job.userId}::uuid,
-          ${job.creditsReserved},
-          ${'Refund for failed analysis job ' + jobId},
+          ${job.creditsReserved}::int,
+          ${'Refund for failed analysis job ' + jobId}::text,
           ${jobId}::uuid
         )
       `;

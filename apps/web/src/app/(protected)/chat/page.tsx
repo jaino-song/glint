@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCreateSession, useSendMessage, useStandardAnalysis } from '@/hooks';
+import { useCreateSession, useStandardAnalysis } from '@/hooks';
 import { useChatStore, useAuthStore } from '@/stores';
 import { ChatInput, ChatMessage } from '@/components/chat';
 import { Bot, Sparkles } from 'lucide-react';
@@ -12,7 +12,6 @@ export default function NewChatPage() {
   const { user } = useAuthStore();
   const { pendingMessages, clearPendingMessages, isSubmitting, setIsSubmitting } = useChatStore();
   const createSession = useCreateSession();
-  const sendMessage = useSendMessage();
   const standardAnalysis = useStandardAnalysis();
 
   // 새 채팅 페이지 진입 시 pending messages 초기화
@@ -21,24 +20,22 @@ export default function NewChatPage() {
   }, [clearPendingMessages]);
 
   const handleSubmit = async (content: string, type: 'chat' | 'analysis') => {
+    // YouTube 링크가 아닌 경우 세션 생성하지 않음
+    if (type !== 'analysis') {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       // 1. 새 세션 생성
       const session = await createSession.mutateAsync(undefined);
 
-      // 2. 메시지 또는 분석 요청
-      if (type === 'analysis') {
-        await standardAnalysis.mutateAsync({
-          url: content,
-          sessionId: session.id,
-        });
-      } else {
-        await sendMessage.mutateAsync({
-          sessionId: session.id,
-          content,
-        });
-      }
+      // 2. 분석 요청
+      await standardAnalysis.mutateAsync({
+        url: content,
+        sessionId: session.id,
+      });
 
       // 3. 새 세션 페이지로 이동
       router.push(`/chat/${session.id}`);

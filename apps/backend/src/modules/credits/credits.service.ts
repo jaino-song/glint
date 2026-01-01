@@ -80,10 +80,10 @@ export class CreditsService {
     >`
       SELECT * FROM deduct_credits(
         ${userId}::uuid,
-        ${amount},
-        ${description},
+        ${amount}::int,
+        ${description}::text,
         ${referenceId ? referenceId : null}::uuid,
-        ${referenceType || null}
+        ${referenceType || null}::text
       )
     `;
 
@@ -103,8 +103,8 @@ export class CreditsService {
     const result = await this.prisma.$queryRaw<Array<{ refund_credits: number }>>`
       SELECT refund_credits(
         ${userId}::uuid,
-        ${amount},
-        ${description},
+        ${amount}::int,
+        ${description}::text,
         ${referenceId || null}::uuid
       )
     `;

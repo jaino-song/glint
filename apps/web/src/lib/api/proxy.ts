@@ -71,11 +71,11 @@ export async function proxyToBackend(
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       try {
         const text = await request.text();
-        if (text) {
-          body = text;
-        }
+        // 빈 body인 경우에도 빈 객체를 전송 (Zod validation 호환)
+        body = text || '{}';
       } catch {
-        // No body
+        // Body 읽기 실패 시 빈 객체 전송
+        body = '{}';
       }
     }
 

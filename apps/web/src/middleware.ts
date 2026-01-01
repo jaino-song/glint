@@ -8,8 +8,13 @@ const protectedPaths = ['/chat', '/library', '/settings', '/admin'];
 const authPaths = ['/login', '/register'];
 
 export async function middleware(request: NextRequest) {
-  const response = await updateSession(request);
+  const { response, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
+
+  // Skip auth check for auth callback route
+  if (pathname === '/auth/callback') {
+    return response;
+  }
 
   // Check if path is protected
   const isProtectedPath = protectedPaths.some(
@@ -19,20 +24,18 @@ export async function middleware(request: NextRequest) {
   // Check if path is auth path
   const isAuthPath = authPaths.some((path) => pathname === path);
 
-  // Get session from cookies (simplified check)
-  const hasSession =
-    request.cookies.get('sb-access-token')?.value ||
-    request.cookies.get('sb-refresh-token')?.value;
+  // Use actual user from Supabase (not just cookie existence)
+  const isAuthenticated = !!user;
 
-  // Redirect to login if accessing protected route without session
-  if (isProtectedPath && !hasSession) {
+  // Redirect to login if accessing protected route without valid session
+  if (isProtectedPath && !isAuthenticated) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect to chat if accessing auth route with session
-  if (isAuthPath && hasSession) {
+  // Redirect to chat if accessing auth route with valid session
+  if (isAuthPath && isAuthenticated) {
     return NextResponse.redirect(new URL('/chat', request.url));
   }
 

@@ -4,3 +4,4 @@ export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 export { Avatar } from './avatar';
 export { Spinner, LoadingScreen } from './spinner';
 export { Badge } from './badge';
+export { Markdown } from './markdown';

@@ -55,8 +55,8 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // 세션 갱신
-  await supabase.auth.getUser();
+  // 세션 갱신 및 사용자 정보 조회
+  const { data: { user } } = await supabase.auth.getUser();
 
-  return response;
+  return { response, user };
 }

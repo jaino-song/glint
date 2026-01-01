@@ -8,7 +8,6 @@ import {
   Param,
   Query,
   UseGuards,
-  UsePipes,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -56,10 +55,9 @@ export class ChatController {
 
   @Post('sessions')
   @ApiOperation({ summary: 'Create new chat session' })
-  @UsePipes(new ZodValidationPipe(createSessionSchema))
   async createSession(
     @CurrentUserId() userId: string,
-    @Body() data: CreateSessionDto,
+    @Body(new ZodValidationPipe(createSessionSchema)) data: CreateSessionDto,
   ): Promise<ChatSession> {
     return this.chatService.createSession(userId, data);
   }
@@ -75,11 +73,10 @@ export class ChatController {
 
   @Patch('sessions/:id')
   @ApiOperation({ summary: 'Update chat session' })
-  @UsePipes(new ZodValidationPipe(updateSessionSchema))
   async updateSession(
     @CurrentUserId() userId: string,
     @Param('id') sessionId: string,
-    @Body() data: UpdateSessionDto,
+    @Body(new ZodValidationPipe(updateSessionSchema)) data: UpdateSessionDto,
   ): Promise<ChatSession> {
     return this.chatService.updateSession(userId, sessionId, data);
   }
@@ -96,12 +93,11 @@ export class ChatController {
 
   @Post('sessions/:id/messages')
   @ApiOperation({ summary: 'Send message to session' })
-  @UsePipes(new ZodValidationPipe(sendMessageSchema))
   async sendMessage(
     @CurrentUserId() userId: string,
     @Param('id') sessionId: string,
-    @Body() data: SendMessageDto,
-  ): Promise<ChatMessage> {
+    @Body(new ZodValidationPipe(sendMessageSchema)) data: SendMessageDto,
+  ): Promise<{ userMessage: ChatMessage; assistantMessage: ChatMessage }> {
     return this.chatService.sendMessage(userId, sessionId, data);
   }
 }

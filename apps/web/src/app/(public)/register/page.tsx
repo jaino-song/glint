@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, type RegisterInput } from '@glint/validators';
 import { Button, Input, Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { OAuthButtons } from '@/components/auth';
 import { useRegister } from '@/hooks';
 import { Mail, Lock, User, AlertCircle } from 'lucide-react';
 
@@ -93,6 +94,19 @@ export default function RegisterPage() {
               Create Account
             </Button>
           </form>
+
+          {/* OAuth Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white px-4 text-gray-500">Or sign up with</span>
+            </div>
+          </div>
+
+          {/* OAuth Buttons */}
+          <OAuthButtons mode="register" />
 
           <div className="mt-6 text-center text-sm text-gray-500">
             Already have an account?{' '}

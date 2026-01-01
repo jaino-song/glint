@@ -9,12 +9,24 @@ export type AnalysisMode = 'STANDARD' | 'DEEP';
 export type AnalysisJobStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
 /**
- * 타임라인 항목
+ * 타임라인 세부 포인트
+ */
+export interface TimelinePoint {
+  timestamp: string;
+  content: string;
+}
+
+/**
+ * 타임라인 항목 (Chapter/Section)
  */
 export interface TimelineItem {
-  timestamp: string;
-  description: string;
-  details?: string[];
+  timestamp: string; // 시작 시간
+  endTimestamp?: string; // 종료 시간 (선택)
+  title?: string; // 섹션 제목
+  description?: string; // 섹션 설명 (레거시 호환)
+  summary?: string; // 섹션 요약
+  details?: string[]; // 세부 포인트 (레거시 형식)
+  points?: TimelinePoint[]; // 세부 포인트 (새 형식: timestamp + content)
 }
 
 /**
