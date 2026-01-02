@@ -122,4 +122,18 @@ export const api = {
     getConfig: () =>
       apiClient.get<import('@glint/types').AdConfigResponse>('/ads/config'),
   },
+
+  // Notion
+  notion: {
+    getAuthUrl: () =>
+      apiClient.get<{ authUrl: string }>('/notion/auth'),
+    getStatus: () =>
+      apiClient.get<import('@glint/types').NotionStatus>('/notion/status'),
+    disconnect: () =>
+      apiClient.delete<{ success: boolean }>('/notion/disconnect'),
+    exportAnalysis: (analysisId: string) =>
+      apiClient.post<import('@glint/types').NotionSyncResult>(`/notion/export/${analysisId}`),
+    syncAnalysis: (analysisId: string) =>
+      apiClient.post<import('@glint/types').NotionSyncResult>(`/notion/sync/${analysisId}`),
+  },
 };

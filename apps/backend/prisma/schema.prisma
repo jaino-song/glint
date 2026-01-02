@@ -50,11 +50,13 @@ model Profile {
 // 2. Chat Sessions (채팅 세션)
 // =============================================
 model ChatSession {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  title     String?
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  title          String?
+  notionPageId   String?  @map("notion_page_id")
+  notionPageUrl  String?  @map("notion_page_url")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relations
   user     Profile       @relation(fields: [userId], references: [id], onDelete: Cascade)

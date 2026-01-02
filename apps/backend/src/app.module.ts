@@ -16,6 +16,7 @@ import { AnalysisModule } from './modules/analysis/analysis.module';
 import { CreditsModule } from './modules/credits/credits.module';
 import { AdsModule } from './modules/ads/ads.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { NotionModule } from './modules/notion/notion.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     CreditsModule,
     AdsModule,
     NotificationsModule,
+    NotionModule,
   ],
   providers: [
     {

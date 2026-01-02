@@ -1115,3 +1115,151 @@ API creates job → Pushes to Redis queue → Celery worker picks up → Process
 ```
 
 **Status:** Deferred - current implementation works for MVP, Celery migration planned for scale phase
+
+---
+
+## 2026-01-02: Gemini Chat Context & Markdown Rendering
+
+#### 38. Gemini AI responds without video context
+**File:** `apps/backend/src/modules/chat/gemini-chat.service.ts`
+**Issue:** AI chatbot responded with unrelated information (e.g., Splatoon Agent 3) instead of video content
+
+**Root Cause:**
+- `generateResponse()` only looked for `analysis_card` messages with `analysisRefId` set
+- When analysis job is created, `analysisRefId` is `undefined` (no result yet)
+- After job completes, the `analysis_card` message is NOT updated with `analysisRefId`
+- Content JSON contains `jobId` but was never used as fallback
+
+```typescript
+// BEFORE (only direct analysisRefId)
+const analysisCardMessage = session.messages.find(
+  (m) => m.type === 'analysis_card' && m.analysisRefId,  // ← Always null for new jobs!
+);
+```
+
+**Fix:** Added fallback logic to parse `jobId` from content JSON and lookup `resultId`:
+```typescript
+// AFTER (with fallback)
+const analysisCardMessage = session.messages.find((m) => m.type === 'analysis_card');
+
+let analysisRefId: string | null = null;
+
+if (analysisCardMessage) {
+  if (analysisCardMessage.analysisRefId) {
+    // Direct reference (cached results)
+    analysisRefId = analysisCardMessage.analysisRefId;
+  } else {
+    // Fallback: Parse content JSON
+    const contentJson = JSON.parse(analysisCardMessage.content || '{}');
+    const jobId = contentJson.jobId;
+    const directResultId = contentJson.resultId;
+
+    if (directResultId) {
+      analysisRefId = directResultId;
+    } else if (jobId) {
+      // Lookup job to get resultId
+      const job = await this.prisma.analysisJob.findUnique({
+        where: { id: jobId },
+        select: { resultId: true },
+      });
+      if (job?.resultId) {
+        analysisRefId = job.resultId;
+      }
+    }
+  }
+}
+```
+
+**Data Flow:**
+```
+1. User submits YouTube URL
+2. analysis_card message created with content: {jobId: "xxx", status: "PENDING"}
+3. Worker completes job → updates analysisJob.resultId
+4. User asks question
+5. generateResponse() parses jobId from content → looks up job.resultId → fetches analysis data
+6. AI responds with video context ✓
+```
+
+---
+
+#### 39. Code blocks in chat messages have horizontal scroll instead of wrap
+**File:** `apps/web/src/components/ui/markdown.tsx`
+**Issue:** Long code snippets caused horizontal scrolling in chat bubbles
+
+**Root Cause:**
+- `pre` element used `overflow-x-auto` which enables horizontal scrolling
+- Inner `code` element had no wrapping styles
+
+**Fix:** Changed to wrap-based styling:
+```typescript
+// BEFORE
+pre: ({ children }) => (
+  <pre className="mb-2 overflow-x-auto rounded-lg bg-muted p-3 text-xs">
+    {children}
+  </pre>
+),
+code: ({ children }) => (
+  <code className="font-mono text-xs">{children}</code>
+),
+
+// AFTER
+pre: ({ children }) => (
+  <pre className="mb-2 rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap break-words">
+    {children}
+  </pre>
+),
+code: ({ children }) => (
+  <code className="font-mono text-xs whitespace-pre-wrap break-all">{children}</code>
+),
+```
+
+**CSS Properties:**
+| Property | Effect |
+|----------|--------|
+| `whitespace-pre-wrap` | Preserves whitespace/newlines but allows wrapping at container edge |
+| `break-words` | Breaks long words to prevent overflow |
+| `break-all` | Breaks at any character (more aggressive, good for code) |
+
+---
+
+#### 40. Chat message width too large
+**File:** `apps/web/src/components/chat/chat-message.tsx`
+**Issue:** Chat bubbles took up excessive horizontal space
+
+**Fix:** Reduced max-width from 80% to 70%:
+```typescript
+// BEFORE
+<div className={cn('max-w-[80%] flex-1', isUser ? 'flex justify-end' : '')}>
+
+// AFTER
+<div className={cn('max-w-[70%]', isUser ? 'flex justify-end' : '')}>
+```
+
+Also removed `flex-1` which was causing the container to expand unnecessarily.
+
+---
+
+#### 41. Duplicate user message appears after AI response
+**File:** `apps/web/src/hooks/use-chat.ts`
+**Issue:** After sending a message, the user's message appeared twice - once optimistically, once from server response
+
+**Root Cause:**
+- `onMutate` added optimistic message via `addPendingMessage()`
+- `onSettled` only called `invalidateQueries()` but never `clearPendingMessages()`
+- Both optimistic and server messages displayed
+
+**Fix:** Clear pending messages in `onSettled`:
+```typescript
+// BEFORE
+onSettled: (_, __, variables) => {
+  queryClient.invalidateQueries({ queryKey: chatKeys.session(variables.sessionId) });
+  queryClient.invalidateQueries({ queryKey: chatKeys.sessions() });
+},
+
+// AFTER
+onSettled: (_, __, variables) => {
+  clearPendingMessages();  // ← Added
+  queryClient.invalidateQueries({ queryKey: chatKeys.session(variables.sessionId) });
+  queryClient.invalidateQueries({ queryKey: chatKeys.sessions() });
+},
+```
