@@ -94,6 +94,9 @@ class JobProcessor:
                 "keywords": analysis.keywords,
             }
 
+            if analysis.full_analysis:
+                result_json["fullAnalysis"] = analysis.full_analysis
+
             if analysis.visual_audit:
                 result_json["visualAudit"] = analysis.visual_audit
 

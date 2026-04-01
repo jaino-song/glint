@@ -47,6 +47,7 @@ export interface AnalysisResultJson {
   keyTakeaways: string[];
   timeline: TimelineItem[];
   keywords: string[];
+  fullAnalysis?: string; // 상세 마크다운 분석 보고서
   visualAudit?: VisualAuditItem[]; // Deep Mode only
 }
 

@@ -1263,3 +1263,170 @@ onSettled: (_, __, variables) => {
   queryClient.invalidateQueries({ queryKey: chatKeys.sessions() });
 },
 ```
+
+---
+
+## 2026-01-02: Session-based Notion Export & Analysis Improvements
+
+#### 42. Context detection uses FIRST analysis_card instead of LATEST
+**File:** `apps/backend/src/modules/chat/gemini-chat.service.ts`
+**Issue:** When multiple videos analyzed in same session, AI used context from first video instead of most recent
+
+**Root Cause:**
+- `session.messages.find()` returns the FIRST matching element
+- When user analyzes multiple videos in one session, first video's context was always used
+- New video analysis should take precedence for chat context
+
+```typescript
+// BEFORE (wrong - gets FIRST video)
+const analysisCardMessage = session.messages.find(
+  (m) => m.type === 'analysis_card'
+);
+
+// AFTER (correct - gets LATEST video)
+const analysisCardMessages = session.messages.filter(
+  (m) => m.type === 'analysis_card'
+);
+const analysisCardMessage = analysisCardMessages.at(-1);
+```
+
+**Pattern Note:** `.filter().at(-1)` is safer than `.reverse().find()` as it doesn't mutate the original array.
+
+---
+
+#### 43. Video analysis lacks detailed hierarchical structure
+**Files:**
+- `apps/worker/app/services/gemini_analyzer.py`
+- `apps/worker/app/services/job_processor.py`
+- `packages/types/src/entities/analysis.ts`
+- `apps/web/src/components/chat/analysis-card.tsx`
+- `apps/mobile/src/components/chat/AnalysisCard.tsx`
+
+**Issue:** Video analysis summary was too brief and lacked actionable detail
+
+**Solution:** Implemented "수석 테크니컬 라이터" (Senior Technical Writer) analysis with:
+1. Hierarchical markdown structure
+2. New `fullAnalysis` field for detailed report
+
+**Prompt Structure:**
+```
+# 제목 (H1)
+### 1. 챕터 (H3) - English title in parentheses
+- [00:00] 핵심 주장 (Level 1)
+  - 구체적 설명 (Level 2)
+    - 적용 예시 (Level 3)
+```
+
+**Type Addition:**
+```typescript
+// packages/types/src/entities/analysis.ts
+export interface AnalysisResultJson {
+  // ... existing fields
+  fullAnalysis?: string; // 상세 마크다운 분석 보고서
+}
+```
+
+**Dataclass Addition:**
+```python
+# apps/worker/app/services/gemini_analyzer.py
+@dataclass
+class AnalysisResult:
+    # ... existing fields
+    full_analysis: Optional[str] = None  # Detailed markdown analysis
+```
+
+**UI Components:**
+- Web: Toggle button with ChevronUp/ChevronDown, Markdown renderer
+- Mobile: TouchableOpacity toggle with react-native-markdown-display
+
+---
+
+#### 44. Empty chat sessions cluttering database
+**Issue:** 11 chat sessions existed with no messages, created from abandoned or failed operations
+
+**Root Cause:**
+- Sessions created on input submission but user navigated away
+- Analysis failures didn't clean up empty sessions
+- No automatic cleanup mechanism
+
+**Fix:** Manual cleanup via SQL:
+```sql
+-- First delete related analysis_jobs (foreign key constraint)
+DELETE FROM analysis_jobs
+WHERE session_id IN (
+  SELECT cs.id FROM chat_sessions cs
+  LEFT JOIN chat_messages cm ON cm.session_id = cs.id
+  GROUP BY cs.id
+  HAVING COUNT(cm.id) = 0
+);
+
+-- Then delete empty sessions
+DELETE FROM chat_sessions
+WHERE id IN (
+  SELECT cs.id FROM chat_sessions cs
+  LEFT JOIN chat_messages cm ON cm.session_id = cs.id
+  GROUP BY cs.id
+  HAVING COUNT(cm.id) = 0
+);
+```
+
+**Result:** Deleted 7 analysis_jobs and 11 empty sessions.
+
+**Note:** Foreign key constraint `analysis_jobs_session_id_fkey` requires deleting child records first.
+
+---
+
+#### 45. Gemini models outdated (using 2.0 experimental)
+**File:** `apps/worker/app/services/gemini_analyzer.py`
+**Issue:** Worker using deprecated Gemini 2.0 experimental models
+
+**Previous Configuration:**
+```python
+self.flash_model = genai.GenerativeModel(model_name="gemini-2.0-flash-exp")
+self.pro_model = genai.GenerativeModel(model_name="gemini-2.0-pro-exp")
+```
+
+**Updated Configuration (Gemini 3.0 - December 2025 release):**
+```python
+# Model configurations - Gemini 3.0 (2025.12 release)
+self.flash_model = genai.GenerativeModel(
+    model_name="gemini-3-flash-preview",
+    generation_config={
+        "temperature": 0.3,
+        "top_p": 0.95,
+        "top_k": 40,
+        "max_output_tokens": 8192,
+    },
+    # ... safety settings
+)
+
+self.pro_model = genai.GenerativeModel(
+    model_name="gemini-3-pro-preview",
+    generation_config={
+        "temperature": 0.4,
+        "top_p": 0.95,
+        "top_k": 40,
+        "max_output_tokens": 16384,
+    },
+    # ... safety settings
+)
+```
+
+**Model Usage:**
+| Analysis Mode | Model | Max Tokens |
+|--------------|-------|------------|
+| Standard | `gemini-3-flash-preview` | 8,192 |
+| Deep | `gemini-3-pro-preview` | 16,384 |
+
+**Note:** Worker restart required to apply new model configuration.
+
+---
+
+## Summary Update
+
+| # | Category | Issue | Status |
+|---|----------|-------|--------|
+| 42 | Backend | Context uses first video instead of latest | Fixed |
+| 43 | Feature | Detailed hierarchical analysis (fullAnalysis) | Implemented |
+| 44 | Database | Empty chat sessions cleanup | Fixed |
+| 45 | Worker | Gemini 3.0 model upgrade | Fixed |

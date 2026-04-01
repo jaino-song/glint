@@ -23,13 +23,14 @@ class AnalysisResult:
     title: str
     summary: str
     key_takeaways: list[str]
-    timeline: list[dict]  # [{timestamp, description, details?}]
+    timeline: list[dict]  # [{timestamp, title, summary, points?}]
     keywords: list[str]
+    full_analysis: Optional[str] = None  # Detailed markdown analysis
     visual_audit: Optional[list[dict]] = None  # Deep Mode only
 
 
 # System prompts for analysis
-STANDARD_ANALYSIS_PROMPT = """You are an expert video content analyst. Analyze the following video transcript and provide a comprehensive analysis.
+STANDARD_ANALYSIS_PROMPT = """당신은 IT 및 기술 콘텐츠를 전문적으로 정리하는 '수석 테크니컬 라이터'입니다. 제공된 동영상 스크립트를 분석하여 핵심 내용과 세부 사항이 빠짐없이 포함된 구조화된 보고서를 작성해야 합니다.
 
 VIDEO INFORMATION:
 - Title: {title}
@@ -39,25 +40,39 @@ VIDEO INFORMATION:
 TRANSCRIPT:
 {transcript}
 
-Provide your analysis in the following JSON format:
+## 출력 형식
+
+JSON 형식으로 응답하되, fullAnalysis 필드에는 아래 구조의 마크다운을 작성하세요:
+
+### fullAnalysis 마크다운 구조:
+1. **제목**: 스크립트의 핵심 주제를 반영한 제목 (H1)
+2. **챕터 (H3)**: `### 숫자. 소제목 (원문 영어 소제목)`
+3. **내용 계층 구조**:
+   - **레벨 1 (`-`)**: 해당 챕터의 핵심 주장이나 사건 (타임스탬프 `[00:00]` 형식 포함)
+   - **레벨 2 (`  -`)**: 레벨 1에 대한 구체적인 설명, 이유, 배경, 논리적 근거
+   - **레벨 3 (`    -`)**: 적용 예시(Application Example), 구체적인 프롬프트 예시, 사용된 도구의 실제 사용 사례
+
+### JSON 응답 형식:
 {{
-  "title": "A clear, descriptive title summarizing the video content",
-  "summary": "A 2-3 paragraph comprehensive summary of the video content",
-  "keyTakeaways": ["takeaway 1", "takeaway 2", "takeaway 3", "takeaway 4", "takeaway 5"],
+  "title": "영상 제목 (한국어)",
+  "summary": "3-5문장의 핵심 요약",
+  "keyTakeaways": ["핵심 포인트 1", "핵심 포인트 2", "핵심 포인트 3", ...],
   "timeline": [
-    {{"timestamp": "00:00", "description": "Introduction", "details": ["Key point 1", "Key point 2"]}},
-    {{"timestamp": "02:30", "description": "Main topic", "details": ["Detail 1", "Detail 2"]}}
+    {{"timestamp": "00:00", "title": "섹션 제목", "summary": "섹션 요약", "points": [{{"timestamp": "00:30", "content": "세부 내용"}}]}}
   ],
-  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
+  "keywords": ["키워드1", "키워드2", ...],
+  "fullAnalysis": "# 제목\\n\\n### 1. 첫 번째 챕터 (Chapter Title)\\n\\n- [00:00] 핵심 주장\\n  - 구체적 설명...\\n    - 적용 예시:..."
 }}
 
-IMPORTANT:
-- Extract 5-10 key takeaways that capture the main insights
-- Create a timeline with major sections/topics (5-10 entries)
-- Include 5-10 relevant keywords/tags
-- Write in the same language as the transcript
-- Be specific and actionable in your takeaways
-- Ensure the summary captures the essence of the content
+## 작성 규칙
+
+1. **언어**: 한국어로 작성 (전문 용어는 괄호 안에 영문 병기)
+2. **완전성**: 정보 누락 없이 모든 명령어, 프롬프트 내용, 인물 이름, 도구 이름 정확히 기록
+3. **가독성**: 명료하고 전문적인 어조("~함", "~임" 체)
+4. **fullAnalysis**:
+   - 모든 챕터와 세부 내용을 계층적으로 작성
+   - 타임스탬프를 활용해 영상 위치 명시
+   - 적용 예시와 구체적 사례 포함
 
 Respond ONLY with valid JSON, no additional text."""
 
@@ -132,9 +147,9 @@ class GeminiAnalyzer:
         self.settings = get_settings()
         genai.configure(api_key=self.settings.gemini_api_key)
 
-        # Model configurations
+        # Model configurations - Gemini 3.0 (2025.12 release)
         self.flash_model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash-exp",
+            model_name="gemini-3-flash-preview",
             generation_config={
                 "temperature": 0.3,
                 "top_p": 0.95,
@@ -150,7 +165,7 @@ class GeminiAnalyzer:
         )
 
         self.pro_model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash-thinking-exp-01-21",
+            model_name="gemini-3-pro-preview",
             generation_config={
                 "temperature": 0.4,
                 "top_p": 0.95,
@@ -306,6 +321,7 @@ class GeminiAnalyzer:
                 key_takeaways=data.get("keyTakeaways", []),
                 timeline=data.get("timeline", []),
                 keywords=data.get("keywords", []),
+                full_analysis=data.get("fullAnalysis"),
                 visual_audit=data.get("visualAudit") if include_visual else None
             )
         except json.JSONDecodeError as e:

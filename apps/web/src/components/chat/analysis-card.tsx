@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { useAnalysisResult, useAnalysisJob } from '@/hooks';
 import {
@@ -9,6 +10,7 @@ import {
   CardTitle,
   Badge,
   Spinner,
+  Markdown,
 } from '@/components/ui';
 import { formatDuration } from '@/lib/utils';
 import {
@@ -18,6 +20,8 @@ import {
   FileText,
   Loader2,
   BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import type { AnalysisResultJson } from '@glint/types';
 
@@ -26,6 +30,8 @@ interface AnalysisCardProps {
 }
 
 export function AnalysisCard({ analysisId }: AnalysisCardProps) {
+  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+
   // analysisId could be a job ID or a result ID
   // First try to fetch as a job to check status
   const { data: job, isLoading: jobLoading, error: jobError } = useAnalysisJob(analysisId);
@@ -212,6 +218,32 @@ export function AnalysisCard({ analysisId }: AnalysisCardProps) {
                 </Badge>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Full Analysis Toggle */}
+        {result?.fullAnalysis && (
+          <div className="border-t border-border pt-3">
+            <button
+              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              className="flex w-full items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              <span className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                상세 분석 보고서
+              </span>
+              {showFullAnalysis ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </button>
+
+            {showFullAnalysis && (
+              <div className="mt-3 rounded-lg border border-border bg-card p-4">
+                <Markdown content={result.fullAnalysis} />
+              </div>
+            )}
           </div>
         )}
 

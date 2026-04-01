@@ -1,0 +1,218 @@
+There's a new open-source model called
+GLM4.7
+Flash that just dropped and it's
+actually pretty interesting. It's doing
+really well on coding benchmarks. It's
+MIT license and you can run it locally.
+Today I'm going through what it is, the
+benchmark numbers, and whether it's
+actually worth paying attention to. So,
+let's jump in. GLM 4.7 Flash is from
+Z.AI, AI, which is a Chinese AI company
+founded by some researchers from Shingua
+University back in 2019. They've been
+putting out the GLM series of models,
+and this is their latest release. The
+model family has three versions. The
+full GLM 4.7, a quantized FP8 version,
+and then this flash variant. Flash is
+basically optimized for the balance
+between performance and being able to
+actually run it without needing a data
+center. It's 31 billion parameters which
+puts it in that midsize category. Z.ai
+is positioning this as the strongest
+model in the 30 billion class which is
+obviously a marketing claim but the
+benchmarks are legitimately good. The
+model is specifically tuned for coding
+agent task and reasoning. And yeah, it's
+completely open- source under MIT
+license. So you can do whatever you want
+with it commercially. You can grab it
+from hugging face right now. And the
+model card has all the deployment
+instructions if you want to run it
+yourself. So I wanted to test this model
+out and see like how good is it in
+actual production. So this is a really
+quick demo. Obviously I haven't deployed
+this model locally but I'm using hugging
+chat to kind of deploy it. But you can
+see that I ask it to create a voxal art
+environment featuring a temple with a
+garden and everything. And it called
+bunch of tools. The first one being gr17
+image turbo generate and it created this
+temple that we see here. So this image
+model that it used to generate this is
+pretty good. Like these are highquality
+production of those images, animals and
+a temple. So this is really good. But so
+then I asked it to actually code this in
+one single HTML file just so it's easy
+to deploy. And we can click on the
+preview button here to see what the
+temple looks like. Obviously I would set
+the expectations really clear. This is
+not competing against Claude Sonic 4.5
+or GPT 5.2. So the expectation when I
+look at this is not going to be that
+it's going to be a beautiful looking
+vauil environment, but something that
+actually works and I can deploy without
+burning so much token cost. Right? So
+let's take a look at this. So we can see
+this is our garden. We have basic
+abilities to move around. We can drag to
+rotate, scroll to zoom up and down. It
+added some animals. We're kind of seeing
+two bunnies over here which is pretty
+good. And then we see these birds which
+are kind of like flying saucers in the
+air which is not bad at all. Like the
+vauer environment as you can see like
+it's not bad. Like the trees look good.
+They're uniform. Added some height. And
+here's our waterfall. So I'm not going
+to like criticize this model a lot. It's
+good for what it's supposed to do which
+is get up and running and produce
+something that you can use. And you can
+see the coding it's done is all the way
+over here. It's like good amount of
+lines of code and it's doing all the
+mathematics for that boxer environment.
+So, this is not bad at all and it was
+able to do this pretty quickly. All
+right, let's talk about the actual
+benchmarks because this is where it gets
+interesting. On Amy 2025, which is a
+math competition benchmark, it scores
+91.6%.
+That's comparable to what you would see
+from GPT models. For reference, coin 330
+billion 83B thinking gets 85%. So, GLM
+is ahead there. GPQA tests graduate
+level science knowledge and GLM 4.7
+flash hits 75.2%.
+Quen 3 is at 73.4%.
+GPTOSS is at 71.5%.
+So that's pretty solid for a GLM 4.7. On
+the live code bench version 6, which is
+a coding benchmark, it scores 64%. Which
+is decent, but Quen 3 gets it 66%. GPT
+OSS gets 61%. So, it's still
+competitive, but not the top model. But
+here's where it gets really interesting.
+On the software engineering bench
+verified, which tests whether the model
+can actually solve real GitHub issues in
+real code bases, GLM 4.7 Flash scores
+59.2%,
+Quen 3 gets 22% and GBT gets 34%. That
+is a massive gap. It's not just a little
+better, it's almost triple what Quinn is
+getting. Then there's the TA 2 bench
+which tests agentic capabilities like
+tool use and multi-step reasoning. GLM
+scores 79.5%
+compared to Quent 3's 49% and GPT's
+47.7%.
+Again, substantially better. Browse
+tests web browsing capabilities and GLM
+gets 42.8%.
+The next closest one is 28.3. And then
+there's humanity's last exam which is a
+really hard reasoning benchmark. GLM
+scores 14.4%. 4% which doesn't sound
+that impressive until you see that Quinn
+gets 9.8% and GPT gets 10.9%.
+This benchmark is just brutal for all
+models. So what does this tell us? The
+model is strong across the board but is
+particularly good at coding tasks and
+agentic workflows. The software
+engineering bench score is genuinely
+impressive. That's a benchmark where
+most models struggle and GLM is doing
+almost 60% which makes it useful in that
+territory. Now, let's talk about pricing
+because this is actually pretty
+interesting. Z.AI offers both paid API
+access and completely free versions. For
+the paid models, GLM 4.7 flash X is dirt
+cheap. The input is only 7 cents per
+million tokens and cash input is 1 cent
+and output is 40. Compare that to the
+full GLM 4.7 at 60 cents input and $2.2
+output. Flash is onetenth the price for
+input and about 1/5 for output. If you
+look at the other models in their
+lineup, GM 4.7 Flash is competing with
+models like GLM 4.6V Flash X at 4 cents
+input at 40 cents output and GLM 4.5 Air
+at 20 cents input and $110 output. Flash
+sits right in the ultra cheap tier while
+maintaining better performance than most
+of them. But here's the really
+interesting part. There are three
+completely free models. GLM 4.7 Flash,
+GLM 4.6 V Flash, and GLM 4.5 Flash.
+These are free for API access and there
+are no rate limits mentioned, just free.
+Obviously, Z.AI is doing this to get
+adoption and gather data. But if you're
+building something and want to prototype
+without burning money, you can just use
+the free tier. The cash input pricing is
+worth noting, too. Once you send context
+to the API, subsequent requests with the
+same context are massively cheaper. For
+GLM 4.7 Flash, cash input is 1 cent
+versus 7 cents for new input. If you're
+doing agentic workflows where you're
+sending the same system prompt or
+codebase context repeatedly, this adds
+up. For open source alternatives, you're
+usually running them locally. So there's
+no per token cost, but you have hardware
+costs instead. So if you're comparing
+GLM 4.7 flash API pricing to running
+Llama 3.1 locally, you need to do the
+math on your GPU cost versus just using
+the API. For a lot of people, 7 cents
+per million tokens is cheap enough that
+it's not worth running your own
+infrastructure. The value proposition
+here is pretty clear. You get
+performance that's competitive with much
+more expensive models at a pricing
+that's an order of magnitude cheaper
+with a free tier if you just want to
+test it out. So bottom line, GLAM 4.7
+Flash is a solid model with genuinely
+good benchmark numbers, particularly for
+coding. The software bench score of 59%
+is legitimately useful and the pricing
+is extremely competitive and having a
+free tier makes it just easy to try out.
+So, if you're doing coding work or
+building agents, this is worth testing.
+The thinking modes seem to help with
+complex tasks, and the API pricing makes
+it viable for production use without
+worrying too much about cost. If you
+want to try the model out for yourself,
+I'll put the links in the description.
+Let me know in the comments if you end
+up actually using it. And that's it for
+today. Make sure to subscribe to our
+channel. We do real tests, not just
+headlines. Make sure you're also
+subscribed to the world of AI. And don't
+forget to check out our newsletter for
+deeper breakdowns you won't see on
+YouTube. and I'm growing my Twitter
+following. So, make sure you follow me
+on Twitter as well.

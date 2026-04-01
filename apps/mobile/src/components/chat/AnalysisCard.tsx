@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { analysisApi } from '@/lib/api';
+import Markdown from 'react-native-markdown-display';
 import type { AnalysisResultJson } from '@glint/types';
 
 interface AnalysisCardProps {
@@ -16,6 +17,8 @@ interface AnalysisCardProps {
 }
 
 export function AnalysisCard({ analysisId }: AnalysisCardProps) {
+  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['analysis', analysisId],
     queryFn: () => analysisApi.getResult(analysisId),
@@ -104,10 +107,27 @@ export function AnalysisCard({ analysisId }: AnalysisCardProps) {
         </View>
       )}
 
-      {/* View Details Button */}
-      <TouchableOpacity style={styles.viewButton}>
-        <Text style={styles.viewButtonText}>View Full Analysis</Text>
-      </TouchableOpacity>
+      {/* Full Analysis Toggle */}
+      {resultJson.fullAnalysis && (
+        <>
+          <TouchableOpacity
+            style={styles.viewButton}
+            onPress={() => setShowFullAnalysis(!showFullAnalysis)}
+          >
+            <Text style={styles.viewButtonText}>
+              {showFullAnalysis ? '요약 보기' : '상세 분석 보고서 보기'}
+            </Text>
+          </TouchableOpacity>
+
+          {showFullAnalysis && (
+            <View style={styles.fullAnalysisContainer}>
+              <Markdown style={markdownStyles}>
+                {resultJson.fullAnalysis}
+              </Markdown>
+            </View>
+          )}
+        </>
+      )}
     </View>
   );
 }
@@ -241,5 +261,69 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  fullAnalysisContainer: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+});
+
+const markdownStyles = StyleSheet.create({
+  body: {
+    color: '#374151',
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  heading1: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  heading2: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  heading3: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 6,
+    marginTop: 10,
+  },
+  bullet_list: {
+    marginLeft: 8,
+  },
+  bullet_list_icon: {
+    color: '#6366f1',
+    marginRight: 8,
+  },
+  list_item: {
+    marginBottom: 4,
+    flexDirection: 'row',
+  },
+  code_inline: {
+    backgroundColor: '#e5e7eb',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    fontFamily: 'monospace',
+    fontSize: 12,
+  },
+  blockquote: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#6366f1',
+    paddingLeft: 12,
+    marginLeft: 4,
+    fontStyle: 'italic',
+    color: '#6b7280',
   },
 });
